@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Simple Shop — Cart</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="logo">Simple Shop</div>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+        <li><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="hamburger" id="hamburger">
+        <div></div><div></div><div></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Cart Content -->
+  <main class="container">
+    <h1>Your Cart</h1>
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Qty</th><th>Subtotal</th><th></th></tr>
+      </thead>
+      <tbody id="cart-body"></tbody>
+      <tfoot>
+        <tr>
+          <th colspan="2">Total</th>
+          <th id="total">$0.00</th>
+          <th></th>
+        </tr>
+      </tfoot>
+    </table>
+    <button class="btn primary" id="checkout">Checkout</button>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 Simple Shop. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // ─── Navbar Toggle ──────────────────────────────────────
+    document.getElementById('hamburger').onclick = () =>
+      document.getElementById('nav-links').classList.toggle('active');
+
+    // ─── Load Products & Cart ──────────────────────────────
+    const PROD_KEY = 'products';
+    const CART_KEY = 'cart';
+    const products = JSON.parse(localStorage.getItem(PROD_KEY) || '[]');
+    let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+
+    // ─── Elements ──────────────────────────────────────────
+    const body = document.getElementById('cart-body');
+    const totalEl = document.getElementById('total');
+    const badge   = document.getElementById('cart-count');
+
+    // ─── Render Cart ───────────────────────────────────────
+    function renderCart() {
+      body.innerHTML = '';
+      let total = 0;
+      if (!cart.length) {
+        body.innerHTML = `<tr><td colspan="4">Your cart is empty.</td></tr>`;
+        totalEl.textContent = '$0.00';
+        badge.textContent = '0';
+        return;
+      }
+      cart.forEach(item => {
+        const p = products.find(x => x.id === item.id);
+        const subtotal = p.price * item.qty;
+        total += subtotal;
+        body.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td>${p.name}</td>
+            <td><input type="number" min="1" value="${item.qty}" data-id="${p.id}"></td>
+            <td>$${subtotal.toFixed(2)}</td>
+            <td><button data-del="${p.id}">✕</button></td>
+          </tr>`);
+      });
+      totalEl.textContent = `$${total.toFixed(2)}`;
+      badge.textContent = cart.reduce((s,x) => s + x.qty, 0);
+    }
+
+    // ─── Qty Change & Delete ───────────────────────────────
+    body.addEventListener('change', e => {
+      const id = +e.target.dataset.id;
+      const it = cart.find(x => x.id === id);
+      it.qty = +e.target.value;
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+      renderCart();
+    });
+
+    body.addEventListener('click', e => {
+      const id = +e.target.dataset.del;
+      if (!id) return;
+      cart = cart.filter(x => x.id !== id);
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+      renderCart();
+    });
+
+    // ─── Checkout Stub ─────────────────────────────────────
+    document.getElementById('checkout').onclick = () =>
+      alert('Demo only – no payment gateway!');
+
+    renderCart();
+  </script>
+</body>
+</html>
