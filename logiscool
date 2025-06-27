@@ -1,0 +1,146 @@
+stage:
+    default backdrop Polka_Dot_Field_Light_Blue_Light("gallery:Games/Polka Dot Field Light Blue Light")
+    poke = 0
+    greenpoints = 0
+    redpoints = 0
+
+    def pointerIsDown():
+        if Pointer.isDown: 
+            return True
+
+    def direction():
+        return Math.round(Pieces.directionTo(Pointer))
+
+    def force():
+        return Math.round(Pieces.distanceTo(Pointer) / 40)
+
+    actor Pieces:
+        costume Red("gallery:Games/Air Hockey Piece Red Top")
+        costume Green("gallery:Games/Air Hockey Piece Green Top")
+
+        when started:
+            setPosition(-260, 0)
+            hide()
+            createClone(self)
+
+        when cloned:
+            if cloneId % 2 == 0: 
+                setCostume(1)
+            else: 
+                setCostume(2)
+
+            wait(3)
+            size = 30
+            physics.damping = 0.2
+            physics.setVelocity(0, 0)
+            physics.isStatic = False
+            physics.collisionShape = "circle"
+            physics.horizontalGravity = 0
+            physics.verticalGravity = 0
+            show()
+            while not pointerIsDown(): 
+                pass
+            while pointerIsDown(): 
+                dir = direction()
+                forc = force()
+            physics.setVelocity(forc * 10, dir)
+            k = 1
+            dis = Math.round(distanceTo(Pointer))
+            while (((k <= dis and not touchingActorOrClone(Pieces)) and not touchingActorOrClone(Line)) and not touchingActorOrClone(Line_1)) and not touchingActorOrClone(Line_2): 
+                physics.applyForce(poke / 10, 0)
+                k = k + 1
+                wait(0.01)
+            if cloneId < 8: 
+                createClone(Pieces)
+            else: 
+                wait(4)
+                broadcast("eval")
+
+
+        when signalReceived("eval"):
+            if cloneId > 0: 
+                if costumeName == "Green": 
+                    greenpoints += 100 / Math.round(distanceTo(Ring))
+                else: 
+                    redpoints += 100 / Math.round(distanceTo(Ring))
+
+            else: 
+                showVariable(ref greenpoints)
+                showVariable(ref redpoints)
+
+
+        when touched:
+            if (touching(Line) or touching(Line_1)) or touching(Line_2): 
+                wait(0.1)
+                deleteClone()
+
+    actor Line:
+        costume Line_Idle("gallery:Objects/Line Idle")
+
+        when started:
+            setPosition(0, 100)
+
+    actor Line_1:
+        costume Line_Idle("gallery:Objects/Line Idle")
+
+        when started:
+            setPosition(0, -100)
+
+    actor Line_2:
+        costume Line_Idle("gallery:Objects/Line Idle")
+
+        when started:
+            setPosition(282, 0)
+            heading = 0
+
+    actor Ring:
+        costume Shiny_Ring_Silver("gallery:Misc_Universe/Shiny Ring Silver")
+
+        when started:
+            setPosition(216, 0)
+            size = 50
+            hide()
+
+    actor Circle_Outline:
+        costume Circle_Outline_Black("gallery:Shapes/Circle Outline Black")
+        costume Circle_Outline_White("gallery:Shapes/Circle Outline White")
+
+        when started:
+            setPosition(216, 0)
+            physics.isCollides = False
+            size = 50
+            show()
+
+    actor Arrowhead:
+        costume Arrowhead_Black("gallery:Shapes/Arrowhead Black")
+
+        when started:
+            setPosition(-250, 150)
+            heading = 90
+            size = 10
+            physics.isCollides = False
+
+        when keyPressed("space"):
+            poke = 0
+            heading = 90
+
+        when keyPressed("up arrow"):
+            if heading != 0: 
+                size = 10
+                heading = 0
+                poke = 1
+            else: 
+                if size < 50: 
+                    size += 2
+                    poke += 1
+
+
+        when keyPressed("down arrow"):
+            if heading != 180: 
+                size = 10
+                heading = 180
+                poke = -1
+            else: 
+                if size < 50: 
+                    size += 2
+                    poke -= 1
