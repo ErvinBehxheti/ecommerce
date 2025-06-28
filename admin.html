@@ -2,21 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Simple Shop — Admin</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    /* small tweak to make thumbnail fit nicely */
-    .thumb { width: 50px; height: auto; border-radius: 0.25rem; }
-    form label { display: block; margin-bottom: 0.5rem; }
-  </style>
 </head>
 <body>
-
-  <!-- Navbar -->
+  <!-- reuse navbar -->
   <nav class="navbar">
     <div class="container">
-      <div class="logo">Simple Shop</div>
+      <h1 class="logo">Simple Shop</h1>
       <ul class="nav-links" id="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
@@ -28,155 +22,29 @@
     </div>
   </nav>
 
-  <main class="container">
-    <h1>Admin Panel</h1>
-
-    <!-- Extended form: now with file input -->
-    <form id="prod-form">
-      <input type="hidden" name="id">
-      <label>
-        Name<br>
-        <input required name="name">
-      </label>
-      <label>
-        Price<br>
-        <input required type="number" step="0.01" min="0" name="price">
-      </label>
-      <label>
-        Image<br>
-        <input required type="file" accept="image/*" name="image">
-      </label>
-      <button class="btn primary" type="submit">Save</button>
-      <button class="btn" type="reset">Clear</button>
-    </form>
-
-    <!-- Table now has an Image column -->
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Image</th>
-          <th>Name</th>
-          <th>Price</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="prod-list"></tbody>
-    </table>
-  </main>
-
-  <footer class="footer">
+  <section class="admin">
     <div class="container">
-      <p>&copy; 2025 Simple Shop. All rights reserved.</p>
+      <h1>Admin Panel</h1>
+      <form id="product-form">
+        <div class="form-group">
+          <label for="name">Product Name</label>
+          <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+          <label for="price">Price ($)</label>
+          <input type="number" id="price" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label for="img">Image URL</label>
+          <input type="url" id="img" required>
+        </div>
+        <button type="submit" class="btn primary">Add Product</button>
+      </form>
+      <p id="feedback"></p>
     </div>
-  </footer>
+  </section>
 
-  <script>
-    // ─── Navbar Toggle ───────────────────────────────────
-    document.getElementById('hamburger').onclick = () =>
-      document.getElementById('nav-links').classList.toggle('active');
-
-    // ─── Cart Badge ─────────────────────────────────────
-    const CART_KEY = 'cart';
-    let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
-    document.getElementById('cart-count').textContent =
-      cart.reduce((s,x) => s + x.qty, 0);
-
-    // ─── Admin CRUD w/ Image Upload ────────────────────
-    const PROD_KEY = 'products';
-    let products = JSON.parse(localStorage.getItem(PROD_KEY) || '[]');
-    const list = document.getElementById('prod-list');
-    const form = document.getElementById('prod-form');
-
-    function saveAndRender() {
-      localStorage.setItem(PROD_KEY, JSON.stringify(products));
-      renderTable();
-      // update cart badge in case image changes
-      cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
-      document.getElementById('cart-count').textContent =
-        cart.reduce((s,x) => s + x.qty, 0);
-    }
-
-    function renderTable() {
-      list.innerHTML = '';
-      if (!products.length) {
-        list.innerHTML = `<tr><td colspan="5">No products.</td></tr>`;
-        return;
-      }
-      products.forEach(p => {
-        list.insertAdjacentHTML('beforeend', `
-          <tr>
-            <td>${p.id}</td>
-            <td><img src="${p.img}" class="thumb" alt="${p.name}"></td>
-            <td>${p.name}</td>
-            <td>$${p.price.toFixed(2)}</td>
-            <td>
-              <button data-edit="${p.id}">✎</button>
-              <button data-del="${p.id}">🗑</button>
-            </td>
-          </tr>`);
-      });
-    }
-
-    form.onsubmit = e => {
-      e.preventDefault();
-      const fd = new FormData(form);
-      const id    = fd.get('id');
-      const name  = fd.get('name');
-      const price = +fd.get('price');
-      const file  = form.image.files[0];
-
-      // must be an image
-      if (!file) return alert('Please select an image.');
-
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const dataUrl = ev.target.result;
-        if (id) {
-          // UPDATE existing
-          const idx = products.findIndex(x => x.id == id);
-          products[idx] = {
-            id: +id,
-            name,
-            price,
-            img: dataUrl
-          };
-        } else {
-          // CREATE new
-          products.push({
-            id: Date.now(),
-            name,
-            price,
-            img: dataUrl
-          });
-        }
-        form.reset();
-        saveAndRender();
-      };
-      reader.readAsDataURL(file);
-    };
-
-    // clear hidden id on reset
-    form.onreset = () => form.id.value = '';
-
-    list.addEventListener('click', e => {
-      const del  = e.target.dataset.del;
-      const edit = e.target.dataset.edit;
-      if (del) {
-        products = products.filter(x => x.id != del);
-        saveAndRender();
-      }
-      if (edit) {
-        const p = products.find(x => x.id == edit);
-        form.id.value    = p.id;
-        form.name.value  = p.name;
-        form.price.value = p.price;
-        // Note: file inputs cannot be pre-populated for security reasons
-      }
-    });
-
-    // initial render
-    renderTable();
-  </script>
+  <script src="shop.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>
